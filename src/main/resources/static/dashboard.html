@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Performance</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #f0f0f0; min-height: 100vh; padding: 2rem; }
+
+        .topbar { display: flex; align-items: center; gap: 0.75rem; max-width: 960px; margin: 0 auto 2rem; }
+        .back { color: #555; text-decoration: none; font-size: 0.85rem; transition: color 0.15s; }
+        .back:hover { color: #aaa; }
+        .page-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
+        .spacer { flex: 1; }
+
+        .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 500; border: none; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+        .btn-primary { background: #fff; color: #000; }
+        .btn-primary:hover { background: #e5e5e5; }
+        .btn-ghost { background: transparent; color: #888; border: 1px solid #333; }
+        .btn-ghost:hover { color: #ccc; border-color: #555; }
+        .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+
+        .content { max-width: 960px; margin: 0 auto; }
+
+        /* Stats */
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
+        .stat { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 1rem 1.2rem; text-align: center; }
+        .stat .value { font-size: 1.5rem; font-weight: 700; line-height: 1; }
+        .stat .label { font-size: 0.7rem; color: #555; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.3rem; }
+        .stat.highlight .value { color: #a3e635; }
+
+        /* Section */
+        .section { margin-bottom: 2rem; }
+        .section-header { font-size: 0.75rem; color: #444; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+
+        /* Weight */
+        .weight-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+        .weight-header .section-header { margin-bottom: 0; flex: 1; }
+
+        .inline-form { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+        .inline-form input { background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 0.45rem 0.7rem; color: #f0f0f0; font-size: 0.85rem; font-family: inherit; width: 90px; transition: border-color 0.15s; }
+        .inline-form input:focus { outline: none; border-color: #555; }
+        .inline-form input[type=date] { width: 140px; }
+
+        .weight-list { display: flex; flex-direction: column; gap: 0.4rem; }
+        .weight-row { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.75rem; }
+        .weight-row .date { font-size: 0.82rem; color: #666; flex: 1; }
+        .weight-row .kg { font-size: 1rem; font-weight: 600; white-space: nowrap; }
+        .delta { font-size: 0.8rem; min-width: 50px; text-align: right; }
+        .delta.up { color: #f87171; }
+        .delta.down { color: #a3e635; }
+        .weight-row .del-btn { background: none; border: none; color: #333; cursor: pointer; padding: 0.2rem; border-radius: 4px; font-size: 0.8rem; transition: color 0.15s; opacity: 0; }
+        .weight-row:hover .del-btn { opacity: 1; }
+        .weight-row:hover .del-btn:hover { color: #f87171; }
+
+        .progress-wrap { padding: 0.25rem 0; }
+        .bar-track { height: 4px; background: #222; border-radius: 99px; margin-top: 0.25rem; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg,#a3e635,#65a30d); transition: width 0.6s ease; }
+
+        /* Mini chart */
+        .mini-chart { height: 60px; display: flex; align-items: flex-end; gap: 3px; margin-top: 0.75rem; }
+        .mini-bar { flex: 1; border-radius: 3px 3px 0 0; background: #2a2a2a; min-width: 6px; transition: background 0.2s; position: relative; cursor: default; }
+        .mini-bar:hover { background: #444; }
+        .mini-bar-tip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #222; border: 1px solid #333; border-radius: 6px; padding: 0.2rem 0.5rem; font-size: 0.7rem; color: #ccc; white-space: nowrap; display: none; margin-bottom: 4px; pointer-events: none; z-index: 10; }
+        .mini-bar:hover .mini-bar-tip { display: block; }
+
+        /* Habits progress */
+        .habit-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 0.9rem 1.1rem; margin-bottom: 0.5rem; cursor: default; }
+        .habit-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.45rem; }
+        .habit-name { font-size: 0.88rem; font-weight: 500; }
+        .habit-meta { font-size: 0.73rem; color: #555; }
+        .habit-bar-track { height: 5px; background: #222; border-radius: 99px; overflow: hidden; }
+        .habit-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg,#38bdf8,#0284c7); transition: width 0.6s ease; }
+        .habit-bar-fill.full { background: linear-gradient(90deg,#a3e635,#65a30d); }
+
+        /* Upcoming trainings */
+        .t-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.6rem; }
+        .t-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 0.9rem 1rem; text-decoration: none; color: inherit; transition: border-color 0.15s; display: block; }
+        .t-card:hover { border-color: #3a3a3a; }
+        .t-sport { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem; }
+        .t-info { font-size: 0.78rem; color: #555; }
+
+        /* Modal (weight log) */
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+        .overlay.hidden { display: none; }
+        .modal { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; padding: 1.5rem; width: 90%; max-width: 360px; }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+        .modal-title { font-size: 1rem; font-weight: 600; }
+        .modal-close { background: none; border: none; color: #555; cursor: pointer; font-size: 1.1rem; padding: 0.2rem 0.4rem; }
+        .modal-close:hover { color: #ccc; }
+        .field { margin-bottom: 0.85rem; }
+        .field label { display: block; font-size: 0.72rem; color: #666; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.35rem; }
+        .field input { width: 100%; background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 0.6rem 0.75rem; color: #f0f0f0; font-size: 0.9rem; font-family: inherit; transition: border-color 0.15s; }
+        .field input:focus { outline: none; border-color: #555; }
+        .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 2rem; right: 2rem; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 0.7rem 1.1rem; font-size: 0.85rem; color: #ccc; z-index: 200; transform: translateY(1rem); opacity: 0; transition: all 0.25s; pointer-events: none; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-color: #166534; color: #a3e635; }
+        .toast.error { border-color: #7f1d1d; color: #f87171; }
+
+        .empty { color: #444; font-size: 0.85rem; padding: 0.5rem 0; }
+        .nav-link { font-size: 0.78rem; color: #555; text-decoration: none; margin-left: auto; }
+        .nav-link:hover { color: #aaa; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <a class="back" href="/">← Home</a>
+    <h1 class="page-title">Dashboard</h1>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost btn-sm" onclick="loadAll()">↻ Refresh</button>
+</div>
+
+<div class="content">
+    <div class="stats" id="stats-row">
+        <div class="stat"><div class="value" id="s-weight">…</div><div class="label">Current kg</div></div>
+        <div class="stat"><div class="value" id="s-target">85</div><div class="label">Target kg</div></div>
+        <div class="stat highlight"><div class="value" id="s-toloss">…</div><div class="label">kg to lose</div></div>
+        <div class="stat"><div class="value" id="s-bmi">…</div><div class="label">BMI</div></div>
+        <div class="stat"><div class="value" id="s-kcal">…</div><div class="label">kcal today</div></div>
+        <div class="stat"><div class="value" id="s-habits">…</div><div class="label">habits done</div></div>
+    </div>
+
+    <!-- Weight -->
+    <div class="section">
+        <div class="weight-header">
+            <div class="section-header">⚖️ Weight history</div>
+            <button class="btn btn-primary btn-sm" onclick="openWeightModal()">+ Log weight</button>
+        </div>
+        <div id="weight-section"><div class="empty">Loading…</div></div>
+    </div>
+
+    <!-- Habits -->
+    <div class="section">
+        <div class="section-header">
+            ✅ Weekly habit progress
+            <a class="nav-link" href="/habits.html">Manage →</a>
+        </div>
+        <div id="habits-section"><div class="empty">Loading…</div></div>
+    </div>
+
+    <!-- Upcoming trainings -->
+    <div class="section">
+        <div class="section-header">
+            🏃 Upcoming trainings
+            <a class="nav-link" href="/trainings.html">Manage →</a>
+        </div>
+        <div class="t-grid" id="t-grid"><div class="empty">Loading…</div></div>
+    </div>
+</div>
+
+<!-- Weight log modal -->
+<div class="overlay hidden" id="overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title">Log weight</span>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <form onsubmit="submitWeight(event)">
+            <div class="field">
+                <label>Weight (kg)</label>
+                <input id="w-kg" type="number" step="0.1" min="30" max="300" required placeholder="e.g. 89.2" autofocus>
+            </div>
+            <div class="field">
+                <label>Date</label>
+                <input id="w-date" type="date" required>
+            </div>
+            <div class="field">
+                <label>Notes (optional)</label>
+                <input id="w-notes" type="text" maxlength="200" placeholder="Morning, after workout…">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const sportIcons = { RUNNING:'🏃', TENNIS:'🎾', CYCLING:'🚴', OTHER:'💪' };
+    const cap = s => s.charAt(0) + s.slice(1).toLowerCase();
+
+    let dash = null, weightHistory = [];
+
+    async function loadAll() {
+        try {
+            [dash, weightHistory] = await Promise.all([
+                api('/api/users/1/dashboard'),
+                api('/api/users/1/weight')
+            ]);
+            renderStats();
+            renderWeight();
+            renderHabits();
+            renderTrainings();
+        } catch(e) { console.error(e); }
+    }
+
+    function renderStats() {
+        document.getElementById('s-weight').textContent = dash.currentWeightKg;
+        document.getElementById('s-target').textContent = dash.targetWeightKg;
+        document.getElementById('s-toloss').textContent = dash.weightToLoseKg;
+        document.getElementById('s-bmi').textContent = dash.bmi;
+        document.getElementById('s-kcal').textContent = dash.caloriesTodayTotal;
+        document.getElementById('s-habits').textContent = `${dash.habitsCompletedToday}/${dash.habitsTotalToday}`;
+    }
+
+    function renderWeight() {
+        const el = document.getElementById('weight-section');
+        el.innerHTML = '';
+        if (!weightHistory.length) { el.innerHTML = '<div class="empty">No weight logged yet.</div>'; return; }
+
+        const sorted = [...weightHistory].sort((a,b) => new Date(b.date)-new Date(a.date));
+        const target = dash.targetWeightKg;
+        const startKg = sorted[sorted.length-1]?.weightKg || sorted[0].weightKg;
+
+        // Mini chart (last 30 entries)
+        const chartData = [...sorted].reverse().slice(-30);
+        if (chartData.length > 1) {
+            const minKg = Math.min(...chartData.map(e=>e.weightKg));
+            const maxKg = Math.max(...chartData.map(e=>e.weightKg));
+            const range = (maxKg-minKg) || 1;
+            const chart = document.createElement('div'); chart.className = 'mini-chart';
+            chartData.forEach(e => {
+                const h = Math.max(4, Math.round(((maxKg-e.weightKg)/range)*50)+4);
+                const d = new Date(e.date).toLocaleDateString('en-BE',{month:'short',day:'numeric'});
+                chart.innerHTML += `<div class="mini-bar" style="height:${h}px"><div class="mini-bar-tip">${e.weightKg} kg<br>${d}</div></div>`;
+            });
+            el.appendChild(chart);
+        }
+
+        const progress = startKg > target
+            ? Math.min(100, Math.max(0, ((startKg-sorted[0].weightKg)/(startKg-target))*100))
+            : 0;
+        const progressWrap = document.createElement('div'); progressWrap.className = 'progress-wrap';
+        progressWrap.innerHTML = `<div style="display:flex;justify-content:space-between;font-size:0.72rem;color:#555;margin-bottom:0.2rem"><span>Progress to ${target} kg</span><span>${progress.toFixed(1)}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${progress.toFixed(1)}%"></div></div>`;
+        el.appendChild(progressWrap);
+
+        const list = document.createElement('div'); list.className = 'weight-list'; list.style.marginTop = '0.75rem';
+        sorted.slice(0, 15).forEach((e, i) => {
+            const prev = sorted[i+1];
+            const delta = prev ? (e.weightKg-prev.weightKg) : null;
+            const dateStr = new Date(e.date).toLocaleDateString('en-BE',{weekday:'short',month:'short',day:'numeric'});
+            const row = document.createElement('div'); row.className = 'weight-row';
+            row.innerHTML = `
+                <span class="date">${dateStr}</span>
+                <span class="kg">${e.weightKg} kg</span>
+                <span class="delta ${delta===null?'':delta>0?'up':'down'}">${delta===null?'—':((delta>0?'+':'')+delta.toFixed(1)+' kg')}</span>
+                <button class="del-btn" onclick="deleteWeight(${e.id})" title="Delete">✕</button>
+            `;
+            list.appendChild(row);
+        });
+        el.appendChild(list);
+        if (sorted.length > 15) {
+            const more = document.createElement('div');
+            more.style.cssText = 'font-size:0.75rem;color:#444;padding:0.4rem 0;';
+            more.textContent = `+ ${sorted.length-15} older entries`;
+            el.appendChild(more);
+        }
+    }
+
+    function renderHabits() {
+        const el = document.getElementById('habits-section');
+        el.innerHTML = '';
+        const progress = dash.weeklyHabitProgress || [];
+        if (!progress.length) { el.innerHTML = '<div class="empty">No habits yet. <a href="/habits.html" style="color:#888">Add some →</a></div>'; return; }
+        progress.forEach(h => {
+            const pct = Math.min(100, (h.completedDays / Math.max(h.targetDays,1))*100);
+            el.innerHTML += `
+                <div class="habit-card">
+                    <div class="habit-top">
+                        <span class="habit-name">${esc(h.habitName)}</span>
+                        <span class="habit-meta">${h.completedDays}/${h.targetDays} days · ${Math.round(h.completionRate*100)}%</span>
+                    </div>
+                    <div class="habit-bar-track"><div class="habit-bar-fill ${pct>=100?'full':''}" style="width:${pct.toFixed(1)}%"></div></div>
+                </div>`;
+        });
+    }
+
+    function renderTrainings() {
+        const grid = document.getElementById('t-grid');
+        grid.innerHTML = '';
+        const upcoming = (dash.upcomingTrainings||[]);
+        if (!upcoming.length) { grid.innerHTML = '<div class="empty">No upcoming trainings. <a href="/trainings.html" style="color:#888">Schedule →</a></div>'; return; }
+        upcoming.forEach(t => {
+            const d = new Date(t.scheduledAt);
+            const dateStr = d.toLocaleDateString('en-BE',{weekday:'short',month:'short',day:'numeric'});
+            const timeStr = d.toLocaleTimeString('en-BE',{hour:'2-digit',minute:'2-digit'});
+            grid.innerHTML += `
+                <a class="t-card" href="/trainings.html">
+                    <div class="t-sport">${sportIcons[t.sportType]||'💪'} ${cap(t.sportType)}</div>
+                    <div class="t-info">${dateStr} at ${timeStr}</div>
+                    <div class="t-info">${t.plannedDurationMinutes} min${t.distanceKm ? ` · ${t.distanceKm} km` : ''}</div>
+                </a>`;
+        });
+    }
+
+    // Weight modal
+    function openWeightModal() {
+        document.getElementById('w-date').value = new Date().toISOString().slice(0,10);
+        document.getElementById('w-kg').value = '';
+        document.getElementById('w-notes').value = '';
+        document.getElementById('overlay').classList.remove('hidden');
+        setTimeout(() => document.getElementById('w-kg').focus(), 50);
+    }
+
+    async function submitWeight(e) {
+        e.preventDefault();
+        const body = {
+            date: document.getElementById('w-date').value,
+            weightKg: parseFloat(document.getElementById('w-kg').value),
+            notes: document.getElementById('w-notes').value.trim() || null
+        };
+        try {
+            await fetch('/api/users/1/weight', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+            closeModal(); await loadAll(); toast('Weight logged ✓','success');
+        } catch(e) { toast('Failed to save','error'); }
+    }
+
+    async function deleteWeight(id) {
+        if (!confirm('Delete this weight entry?')) return;
+        try {
+            await fetch(`/api/users/1/weight/${id}`, { method:'DELETE' });
+            await loadAll(); toast('Entry deleted','success');
+        } catch(e) { toast('Failed to delete','error'); }
+    }
+
+    function closeModal() { document.getElementById('overlay').classList.add('hidden'); }
+    document.getElementById('overlay').addEventListener('click', e => { if (e.target===document.getElementById('overlay')) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
+
+    // Refresh when tab becomes visible (cross-page changes)
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) loadAll(); });
+
+    let toastTimer;
+    function toast(msg, type='') {
+        const el = document.getElementById('toast');
+        el.textContent = msg; el.className = `toast ${type}`;
+        void el.offsetWidth; el.classList.add('show');
+        clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+    }
+
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    async function api(url) { const r = await fetch(url); if (!r.ok) throw new Error(); return r.json(); }
+
+    loadAll();
+</script>
+</body>
+</html>

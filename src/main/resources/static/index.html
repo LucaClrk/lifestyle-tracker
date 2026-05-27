@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance — Fitness Tracker</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f0f0f;
+            color: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #fff 0%, #888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            color: #888;
+            margin-top: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .stat .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat .label {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1rem;
+            max-width: 900px;
+            width: 100%;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-decoration: none;
+            color: inherit;
+            transition: border-color 0.2s, transform 0.2s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            border-color: #555;
+            transform: translateY(-2px);
+        }
+
+        .card .icon {
+            font-size: 1.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+
+        .card p {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .card .tag {
+            display: inline-block;
+            margin-top: 0.75rem;
+            font-size: 0.7rem;
+            background: #2a2a2a;
+            color: #888;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-family: monospace;
+        }
+
+        .dashboard-preview {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 1.5rem;
+            max-width: 900px;
+            width: 100%;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-preview h2 {
+            font-size: 0.85rem;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+        }
+
+        #dashboard-data {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #888;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .sport-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #222;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+            margin: 0.25rem;
+        }
+
+        .upcoming {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .footer {
+            color: #444;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        .footer a { color: #666; text-decoration: none; }
+        .footer a:hover { color: #aaa; }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <h1>Performance</h1>
+    <p id="subtitle">Loading your stats...</p>
+</div>
+
+<div class="stats" id="stats-row" style="display:none">
+    <div class="stat">
+        <div class="value" id="stat-weight">—</div>
+        <div class="label">Current kg</div>
+    </div>
+    <div class="stat">
+        <div class="value" id="stat-target">85</div>
+        <div class="label">Target kg</div>
+    </div>
+    <div class="stat">
+        <div class="value" id="stat-to-lose">—</div>
+        <div class="label">kg to lose</div>
+    </div>
+    <div class="stat">
+        <div class="value" id="stat-bmi">—</div>
+        <div class="label">BMI</div>
+    </div>
+    <div class="stat">
+        <div class="value" id="stat-calories">—</div>
+        <div class="label">kcal today</div>
+    </div>
+    <div class="stat">
+        <div class="value" id="stat-habits">—</div>
+        <div class="label">habits done</div>
+    </div>
+</div>
+
+<div id="upcoming-section" style="display:none; max-width:900px; width:100%; margin-bottom:2rem;">
+    <div style="font-size:0.8rem; color:#555; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.5rem;">Upcoming trainings</div>
+    <div class="upcoming" id="upcoming-list"></div>
+</div>
+
+<div class="cards">
+    <a class="card" href="/swagger-ui.html">
+        <div class="icon">📋</div>
+        <h3>API Explorer</h3>
+        <p>Browse and test all endpoints — habits, training, food, weight logs.</p>
+        <span class="tag">/swagger-ui.html</span>
+    </a>
+    <a class="card" href="/h2-console">
+        <div class="icon">🗄️</div>
+        <h3>Database Console</h3>
+        <p>Query the H2 database directly. JDBC URL: <code style="color:#aaa">jdbc:h2:file:./data/fitnessdb</code></p>
+        <span class="tag">/h2-console</span>
+    </a>
+    <a class="card" href="/dashboard.html">
+        <div class="icon">📊</div>
+        <h3>Dashboard</h3>
+        <p>Weight progress, habit streaks, and upcoming sessions at a glance.</p>
+        <span class="tag">/dashboard.html</span>
+    </a>
+    <a class="card" href="/trainings.html">
+        <div class="icon">🏃</div>
+        <h3>Trainings</h3>
+        <p>Next scheduled runs, tennis sessions, and cycling rides.</p>
+        <span class="tag">/trainings.html</span>
+    </a>
+    <a class="card" href="/habits.html">
+        <div class="icon">✅</div>
+        <h3>Habits</h3>
+        <p>Today's completion status, weekly dots, and category breakdown.</p>
+        <span class="tag">/habits.html</span>
+    </a>
+    <a class="card" href="/food.html">
+        <div class="icon">🥗</div>
+        <h3>Nutrition</h3>
+        <p>Meals grouped by type with a macro split bar and per-item detail.</p>
+        <span class="tag">/food.html</span>
+    </a>
+</div>
+
+<div class="footer">
+    <a href="/api-docs">OpenAPI JSON</a> &nbsp;·&nbsp;
+    User ID: 1 &nbsp;·&nbsp;
+    Port 8080
+</div>
+
+<script>
+    const sportIcons = { RUNNING: '🏃', TENNIS: '🎾', CYCLING: '🚴', OTHER: '💪' };
+
+    fetch('/api/users/1/dashboard')
+        .then(r => r.json())
+        .then(d => {
+            document.getElementById('subtitle').textContent =
+                `Hey ${d.userName} — let's hit ${d.targetWeightKg}kg`;
+
+            document.getElementById('stat-weight').textContent = d.currentWeightKg;
+            document.getElementById('stat-target').textContent = d.targetWeightKg;
+            document.getElementById('stat-to-lose').textContent = d.weightToLoseKg;
+            document.getElementById('stat-bmi').textContent = d.bmi;
+            document.getElementById('stat-calories').textContent = d.caloriesTodayTotal;
+            document.getElementById('stat-habits').textContent =
+                `${d.habitsCompletedToday}/${d.habitsTotalToday}`;
+            document.getElementById('stats-row').style.display = 'flex';
+
+            if (d.upcomingTrainings && d.upcomingTrainings.length > 0) {
+                const list = document.getElementById('upcoming-list');
+                d.upcomingTrainings.forEach(t => {
+                    const date = new Date(t.scheduledAt);
+                    const label = date.toLocaleDateString('en-BE', { weekday: 'short', month: 'short', day: 'numeric' });
+                    const km = t.distanceKm ? ` · ${t.distanceKm}km` : '';
+                    list.innerHTML += `<span class="sport-badge">${sportIcons[t.sportType] || '💪'} ${t.sportType} — ${label} · ${t.plannedDurationMinutes}min${km}</span>`;
+                });
+                document.getElementById('upcoming-section').style.display = 'block';
+            }
+        })
+        .catch(() => {
+            document.getElementById('subtitle').textContent = 'Your health & fitness tracker';
+        });
+</script>
+</body>
+</html>
