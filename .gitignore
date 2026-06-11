@@ -1,0 +1,23 @@
+# Build output
+target/
+
+# Environment / secrets
+.env
+.env.*
+
+# Garmin OAuth tokens
+garmin-tokens/
+
+# Database files
+data/
+
+# IDE
+.idea/
+*.iml
+*.iws
+.vscode/
+
+# OS
+.DS_Store
+**/.DS_Store
+Thumbs.db

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garmin Stats — Performance</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #f0f0f0; min-height: 100vh; padding: 2rem; }
+
+        .topbar { display: flex; align-items: center; gap: 0.75rem; max-width: 960px; margin: 0 auto 2rem; }
+        .back { color: #555; text-decoration: none; font-size: 0.85rem; transition: color 0.15s; }
+        .back:hover { color: #aaa; }
+        .page-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
+        .spacer { flex: 1; }
+        .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 500; border: none; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+        .btn-ghost { background: transparent; color: #888; border: 1px solid #333; }
+        .btn-ghost:hover { color: #ccc; border-color: #555; }
+
+        .content { max-width: 960px; margin: 0 auto; }
+
+        .section { margin-bottom: 2.5rem; }
+        .section-header { font-size: 0.75rem; color: #444; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+
+        /* Stats grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+        .stat-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; padding: 1.1rem 1.2rem; }
+        .stat-icon { font-size: 1.4rem; margin-bottom: 0.4rem; }
+        .stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+        .stat-label { font-size: 0.68rem; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.3rem; }
+        .stat-sub { font-size: 0.72rem; color: #444; margin-top: 0.2rem; }
+
+        /* Progress bar for steps */
+        .step-bar-wrap { height: 4px; background: #2a2a2a; border-radius: 2px; margin-top: 0.5rem; overflow: hidden; }
+        .step-bar { height: 100%; background: #a3e635; border-radius: 2px; transition: width 0.5s ease; }
+
+        /* Sleep breakdown */
+        .sleep-bar-wrap { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 0.6rem; gap: 2px; }
+        .sleep-seg { border-radius: 2px; }
+        .sleep-legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem; }
+        .sleep-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .sleep-legend-item { display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: #666; }
+
+        /* Activity list */
+        .activity-list { display: flex; flex-direction: column; gap: 0.4rem; }
+        .activity-row { background: #1a1a1a; border: 1px solid #222; border-radius: 10px; padding: 0.65rem 1rem; display: flex; align-items: center; gap: 0.9rem; }
+        .activity-icon { font-size: 1.1rem; flex-shrink: 0; width: 24px; text-align: center; }
+        .activity-name { font-size: 0.85rem; font-weight: 500; flex: 1; }
+        .activity-date { font-size: 0.75rem; color: #555; white-space: nowrap; }
+        .activity-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+        .chip { font-size: 0.7rem; background: #111; border: 1px solid #2a2a2a; border-radius: 999px; padding: 0.18rem 0.55rem; color: #666; white-space: nowrap; }
+
+        .empty { color: #444; font-size: 0.85rem; padding: 0.75rem 0; }
+        .loading-msg { color: #444; font-size: 0.85rem; }
+        .error-msg { color: #f87171; font-size: 0.82rem; background: #1a0a0a; border: 1px solid #3a1010; border-radius: 8px; padding: 0.65rem 0.9rem; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 2rem; right: 2rem; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 0.7rem 1.1rem; font-size: 0.85rem; color: #ccc; z-index: 200; transform: translateY(1rem); opacity: 0; transition: all 0.25s; pointer-events: none; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: #7f1d1d; color: #f87171; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <a class="back" href="/">← Home</a>
+    <h1 class="page-title">Garmin Stats</h1>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost" onclick="loadAll()">↻ Refresh</button>
+</div>
+
+<div class="content">
+
+    <!-- Today's Stats -->
+    <div class="section">
+        <div class="section-header">Today</div>
+        <div class="stats-grid" id="stats-grid"><div class="loading-msg">Loading…</div></div>
+    </div>
+
+    <!-- Sleep -->
+    <div class="section">
+        <div class="section-header">Last night's sleep</div>
+        <div id="sleep-section"><div class="loading-msg">Loading…</div></div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="section">
+        <div class="section-header">Recent activities</div>
+        <div class="activity-list" id="activity-list"><div class="loading-msg">Loading…</div></div>
+    </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const activityIcons = {
+        running: '🏃', cycling: '🚴', swimming: '🏊', walking: '🚶',
+        tennis: '🎾', hiking: '🥾', strength_training: '💪',
+        elliptical: '🔄', yoga: '🧘', rowing: '🚣', default: '🏅'
+    };
+
+    function icon(typeKey) {
+        if (!typeKey) return activityIcons.default;
+        const k = typeKey.toLowerCase();
+        for (const [key, val] of Object.entries(activityIcons)) {
+            if (k.includes(key)) return val;
+        }
+        return activityIcons.default;
+    }
+
+    function fmt(n, unit = '') {
+        if (n == null) return '—';
+        return n.toLocaleString() + (unit ? ' ' + unit : '');
+    }
+
+    function fmtDur(min) {
+        if (min == null) return '—';
+        if (min < 60) return min + ' min';
+        return Math.floor(min / 60) + 'h ' + (min % 60) + 'm';
+    }
+
+    async function loadStats() {
+        const el = document.getElementById('stats-grid');
+        try {
+            const stats = await api('/api/garmin/stats');
+            if (!stats) { el.innerHTML = '<div class="error-msg">No stats available.</div>'; return; }
+
+            const stepPct = stats.dailyStepGoal ? Math.min(100, Math.round((stats.totalSteps / stats.dailyStepGoal) * 100)) : 0;
+
+            el.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon">👟</div>
+                    <div class="stat-value">${fmt(stats.totalSteps)}</div>
+                    <div class="stat-label">Steps</div>
+                    ${stats.dailyStepGoal ? `<div class="stat-sub">Goal: ${fmt(stats.dailyStepGoal)}</div>` : ''}
+                    <div class="step-bar-wrap"><div class="step-bar" style="width:${stepPct}%"></div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-value">${fmt(stats.totalKilocalories)}</div>
+                    <div class="stat-label">Total kcal</div>
+                    ${stats.activeKilocalories != null ? `<div class="stat-sub">${fmt(stats.activeKilocalories)} active</div>` : ''}
+                </div>
+                ${stats.restingHeartRate != null ? `
+                <div class="stat-card">
+                    <div class="stat-icon">❤️</div>
+                    <div class="stat-value">${stats.restingHeartRate}</div>
+                    <div class="stat-label">Resting HR</div>
+                    <div class="stat-sub">bpm</div>
+                </div>` : ''}
+                ${stats.averageStressLevel != null ? `
+                <div class="stat-card">
+                    <div class="stat-icon">${stats.averageStressLevel < 26 ? '😌' : stats.averageStressLevel < 51 ? '😐' : '😤'}</div>
+                    <div class="stat-value">${stats.averageStressLevel}</div>
+                    <div class="stat-label">Stress level</div>
+                    <div class="stat-sub">${stats.averageStressLevel < 26 ? 'Low' : stats.averageStressLevel < 51 ? 'Medium' : 'High'}</div>
+                </div>` : ''}
+                ${stats.floorsAscended != null ? `
+                <div class="stat-card">
+                    <div class="stat-icon">🏢</div>
+                    <div class="stat-value">${stats.floorsAscended}</div>
+                    <div class="stat-label">Floors</div>
+                </div>` : ''}
+            `;
+        } catch (e) {
+            el.innerHTML = '<div class="error-msg">Garmin service unavailable. Make sure GARMIN_EMAIL and GARMIN_PASSWORD are set.</div>';
+        }
+    }
+
+    async function loadSleep() {
+        const el = document.getElementById('sleep-section');
+        try {
+            const sleep = await api('/api/garmin/sleep');
+            if (!sleep || sleep.totalSleepMinutes == null) {
+                el.innerHTML = '<div class="empty">No sleep data for last night.</div>';
+                return;
+            }
+            const total = sleep.totalSleepMinutes || 1;
+            const deepPct = Math.round(((sleep.deepSleepMinutes || 0) / total) * 100);
+            const remPct  = Math.round(((sleep.remSleepMinutes  || 0) / total) * 100);
+            const lightPct = Math.round(((sleep.lightSleepMinutes || 0) / total) * 100);
+            const awakePct = 100 - deepPct - remPct - lightPct;
+
+            el.innerHTML = `
+                <div class="stat-card" style="max-width: 400px;">
+                    <div style="display:flex; align-items:baseline; gap:0.5rem;">
+                        <div class="stat-value">${fmtDur(sleep.totalSleepMinutes)}</div>
+                        <div class="stat-label" style="margin-top:0;">total sleep</div>
+                    </div>
+                    <div class="sleep-bar-wrap">
+                        <div class="sleep-seg" style="width:${deepPct}%; background:#3b82f6;"></div>
+                        <div class="sleep-seg" style="width:${remPct}%; background:#a855f7;"></div>
+                        <div class="sleep-seg" style="width:${lightPct}%; background:#60a5fa;"></div>
+                        <div class="sleep-seg" style="width:${awakePct}%; background:#374151;"></div>
+                    </div>
+                    <div class="sleep-legend">
+                        ${sleep.deepSleepMinutes != null ? `<div class="sleep-legend-item"><div class="sleep-dot" style="background:#3b82f6"></div>${fmtDur(sleep.deepSleepMinutes)} deep</div>` : ''}
+                        ${sleep.remSleepMinutes  != null ? `<div class="sleep-legend-item"><div class="sleep-dot" style="background:#a855f7"></div>${fmtDur(sleep.remSleepMinutes)} REM</div>` : ''}
+                        ${sleep.lightSleepMinutes != null ? `<div class="sleep-legend-item"><div class="sleep-dot" style="background:#60a5fa"></div>${fmtDur(sleep.lightSleepMinutes)} light</div>` : ''}
+                        ${sleep.awakeMinutes != null ? `<div class="sleep-legend-item"><div class="sleep-dot" style="background:#374151"></div>${fmtDur(sleep.awakeMinutes)} awake</div>` : ''}
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            el.innerHTML = '<div class="error-msg">Could not load sleep data.</div>';
+        }
+    }
+
+    async function loadActivities() {
+        const el = document.getElementById('activity-list');
+        try {
+            const activities = await api('/api/garmin/activities?limit=15');
+            if (!activities || activities.length === 0) {
+                el.innerHTML = '<div class="empty">No recent activities found.</div>';
+                return;
+            }
+            el.innerHTML = '';
+            activities.forEach(a => {
+                const row = document.createElement('div');
+                row.className = 'activity-row';
+                const dateStr = a.startTimeLocal
+                    ? new Date(a.startTimeLocal.replace(' ', 'T')).toLocaleDateString('en-BE', { weekday: 'short', month: 'short', day: 'numeric' })
+                    : '—';
+                row.innerHTML = `
+                    <span class="activity-icon">${icon(a.activityType)}</span>
+                    <span class="activity-name">${esc(a.activityName || cap(a.activityType || 'Activity'))}</span>
+                    <span class="activity-date">${dateStr}</span>
+                    <div class="activity-chips">
+                        ${a.durationMinutes != null ? `<span class="chip">⏱ ${fmtDur(a.durationMinutes)}</span>` : ''}
+                        ${a.distanceKm != null ? `<span class="chip">📏 ${a.distanceKm} km</span>` : ''}
+                        ${a.averageHR != null ? `<span class="chip">❤️ ${a.averageHR} bpm</span>` : ''}
+                        ${a.calories != null ? `<span class="chip">🔥 ${a.calories} kcal</span>` : ''}
+                        ${a.elevationGain != null && a.elevationGain > 0 ? `<span class="chip">⛰ ${Math.round(a.elevationGain)} m</span>` : ''}
+                    </div>
+                `;
+                el.appendChild(row);
+            });
+        } catch (e) {
+            el.innerHTML = '<div class="error-msg">Could not load activities.</div>';
+        }
+    }
+
+    function loadAll() {
+        loadStats();
+        loadSleep();
+        loadActivities();
+    }
+
+    async function api(url) {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+    }
+
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
+
+    let toastTimer;
+    function toast(msg, type = '') {
+        const el = document.getElementById('toast');
+        el.textContent = msg; el.className = `toast ${type}`;
+        void el.offsetWidth; el.classList.add('show');
+        clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+    }
+
+    loadAll();
+</script>
+</body>
+</html>

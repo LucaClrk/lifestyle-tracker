@@ -58,6 +58,7 @@
         .t-badge.done { background: #1a2e05; color: #a3e635; }
         .t-badge.upcoming { background: #1e3a5f; color: #60a5fa; }
         .t-badge.missed { background: #2a1010; color: #f87171; }
+        .t-badge.garmin { background: #0f2a3a; color: #38bdf8; }
 
         .t-date { font-size: 0.8rem; color: #666; margin-bottom: 0.25rem; }
         .t-details { font-size: 0.8rem; color: #555; display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
@@ -122,6 +123,7 @@
     <a class="back" href="/">← Home</a>
     <h1 class="page-title">Trainings</h1>
     <div class="spacer"></div>
+    <button class="btn btn-ghost" id="sync-btn" onclick="syncGarmin()">⌚ Sync Garmin</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Add training</button>
 </div>
 
@@ -221,6 +223,21 @@
     </div>
 </div>
 
+<!-- Delete confirmation modal -->
+<div class="overlay hidden" id="delete-overlay">
+    <div class="modal" style="max-width:380px;">
+        <div class="modal-header">
+            <span class="modal-title">Delete training?</span>
+            <button class="modal-close" onclick="closeDeleteModal()">✕</button>
+        </div>
+        <p style="font-size:0.85rem;color:#666;margin-bottom:1.25rem;">This can't be undone.</p>
+        <div class="modal-actions">
+            <button class="btn btn-ghost btn-sm" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn btn-sm" style="background:#3a1010;color:#fca5a5;border:1px solid #7f1d1d;" onclick="execDelete()">Delete</button>
+        </div>
+    </div>
+</div>
+
 <!-- Complete modal -->
 <div class="overlay hidden" id="complete-overlay">
     <div class="modal">
@@ -305,7 +322,7 @@
                 <div class="t-actions">
                     <button class="btn btn-green btn-sm" onclick="openComplete(${t.id}, ${t.plannedDurationMinutes})">✓ Done</button>
                     <button class="btn btn-ghost btn-sm" onclick="openEdit(${t.id})">Edit</button>
-                    <button class="btn-danger-sm" onclick="confirmDelete(${t.id})">Delete</button>
+                    <button class="btn-danger-sm" onclick="openDeleteModal(${t.id})">Delete</button>
                 </div>
             `;
             upGrid.appendChild(card);
@@ -321,16 +338,17 @@
             const dur = t.actualDurationMinutes || t.plannedDurationMinutes;
             const isMissed = !t.completed && new Date(t.scheduledAt) < new Date();
             const badge = t.completed ? '✓' : isMissed ? '—' : '';
+            const garminBadge = t.garminActivityId ? `<span class="t-badge garmin" style="font-size:0.6rem;padding:0.12rem 0.4rem;">⌚ Garmin</span>` : '';
             const row = document.createElement('div'); row.className = 'past-row';
             row.innerHTML = `
                 <span class="past-icon">${sportIcons[t.sportType]||'💪'}</span>
-                <span class="past-name">${cap(t.sportType)}${t.feedback ? ` — <span style="color:#666;font-weight:normal;font-size:0.76rem;">${esc(t.feedback)}</span>` : ''}</span>
+                <span class="past-name">${cap(t.sportType)}${t.feedback ? ` — <span style="color:#666;font-weight:normal;font-size:0.76rem;">${esc(t.feedback)}</span>` : ''} ${garminBadge}</span>
                 <span class="past-date">${dateStr}</span>
                 <span class="past-dur">${dur} min${t.distanceKm ? ` · ${t.distanceKm}km` : ''}${badge ? ` ${badge}` : ''}</span>
                 <div class="past-actions">
-                    ${!t.completed ? `<button class="icon-btn" onclick="openComplete(${t.id}, ${t.plannedDurationMinutes})" title="Mark done">✓</button>` : ''}
+                    ${t.completed ? `<button class="icon-btn" onclick="unComplete(${t.id})" title="Undo">↩</button>` : `<button class="icon-btn" onclick="openComplete(${t.id}, ${t.plannedDurationMinutes})" title="Mark done">✓</button>`}
                     <button class="icon-btn" onclick="openEdit(${t.id})" title="Edit">✎</button>
-                    <button class="icon-btn del" onclick="confirmDelete(${t.id})" title="Delete">✕</button>
+                    <button class="icon-btn del" onclick="openDeleteModal(${t.id})" title="Delete">✕</button>
                 </div>
             `;
             pastList.appendChild(row);
@@ -438,21 +456,36 @@
         }
     }
 
-    async function deleteTraining() {
+    function deleteTraining() {
         if (!editingId) return;
-        if (!confirm('Delete this training?')) return;
-        try {
-            await fetch(`/api/users/1/trainings/${editingId}`, { method:'DELETE' });
-            closeModal(); await loadTrainings(); toast('Deleted','success');
-        } catch(e) { toast('Failed to delete','error'); }
+        openDeleteModal(editingId);
     }
 
-    async function confirmDelete(id) {
-        if (!confirm('Delete this training?')) return;
+    let deletingId = null;
+    function openDeleteModal(id) {
+        deletingId = id;
+        document.getElementById('delete-overlay').classList.remove('hidden');
+    }
+    function closeDeleteModal() {
+        document.getElementById('delete-overlay').classList.add('hidden');
+        deletingId = null;
+    }
+    async function execDelete() {
+        if (deletingId === null) return;
+        const id = deletingId;
+        closeDeleteModal();
+        if (editingId === id) closeModal();
         try {
             await fetch(`/api/users/1/trainings/${id}`, { method:'DELETE' });
             await loadTrainings(); toast('Deleted','success');
         } catch(e) { toast('Failed to delete','error'); }
+    }
+
+    async function unComplete(id) {
+        try {
+            await fetch(`/api/users/1/trainings/${id}/uncomplete`, { method:'POST' });
+            await loadTrainings(); toast('Marked as not done','');
+        } catch(e) { toast('Failed to undo','error'); }
     }
 
     function closeModal() { document.getElementById('overlay').classList.add('hidden'); editingId = null; }
@@ -490,7 +523,8 @@
 
     document.getElementById('overlay').addEventListener('click', e => { if (e.target===document.getElementById('overlay')) closeModal(); });
     document.getElementById('complete-overlay').addEventListener('click', e => { if (e.target===document.getElementById('complete-overlay')) closeComplete(); });
-    document.addEventListener('keydown', e => { if (e.key==='Escape') { closeModal(); closeComplete(); } });
+    document.getElementById('delete-overlay').addEventListener('click', e => { if (e.target===document.getElementById('delete-overlay')) closeDeleteModal(); });
+    document.addEventListener('keydown', e => { if (e.key==='Escape') { closeModal(); closeComplete(); closeDeleteModal(); } });
 
     let toastTimer;
     function toast(msg, type='') {
@@ -498,6 +532,22 @@
         el.textContent = msg; el.className = `toast ${type}`;
         void el.offsetWidth; el.classList.add('show');
         clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+    }
+
+    async function syncGarmin() {
+        const btn = document.getElementById('sync-btn');
+        btn.disabled = true; btn.textContent = '⌚ Syncing…';
+        try {
+            const res = await fetch('/api/users/1/trainings/sync-garmin', { method: 'POST' });
+            if (!res.ok) throw new Error();
+            const { synced } = await res.json();
+            await loadTrainings();
+            toast(synced > 0 ? `${synced} training${synced > 1 ? 's' : ''} marked done via Garmin ✓` : 'No matching trainings found', synced > 0 ? 'success' : '');
+        } catch(e) {
+            toast('Garmin sync failed — is the Garmin service running?', 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = '⌚ Sync Garmin';
+        }
     }
 
     function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

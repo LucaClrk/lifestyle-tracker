@@ -205,7 +205,7 @@
     </div>
     <div class="stat">
         <div class="value" id="stat-calories">—</div>
-        <div class="label">kcal today</div>
+        <div class="label" id="stat-calories-label">kcal today</div>
     </div>
     <div class="stat">
         <div class="value" id="stat-habits">—</div>
@@ -224,12 +224,6 @@
         <h3>API Explorer</h3>
         <p>Browse and test all endpoints — habits, training, food, weight logs.</p>
         <span class="tag">/swagger-ui.html</span>
-    </a>
-    <a class="card" href="/h2-console">
-        <div class="icon">🗄️</div>
-        <h3>Database Console</h3>
-        <p>Query the H2 database directly. JDBC URL: <code style="color:#aaa">jdbc:h2:file:./data/fitnessdb</code></p>
-        <span class="tag">/h2-console</span>
     </a>
     <a class="card" href="/dashboard.html">
         <div class="icon">📊</div>
@@ -254,6 +248,11 @@
         <h3>Nutrition</h3>
         <p>Meals grouped by type with a macro split bar and per-item detail.</p>
         <span class="tag">/food.html</span>
+    </a>
+    <a class="card" href="/garmin.html">
+        <h3>Garmin Stats</h3>
+        <p>Your Garmin stats grouped together here.</p>
+        <span class="tag">/garmin.html</span>
     </a>
 </div>
 
@@ -295,6 +294,16 @@
         .catch(() => {
             document.getElementById('subtitle').textContent = 'Your health & fitness tracker';
         });
+
+    fetch('/api/garmin/stats')
+        .then(r => r.json())
+        .then(garmin => {
+            if (garmin && garmin.totalKilocalories != null) {
+                document.getElementById('stat-calories').textContent = garmin.totalKilocalories.toLocaleString();
+                document.getElementById('stat-calories-label').textContent = 'kcal burned';
+            }
+        })
+        .catch(() => {});
 </script>
 </body>
 </html>

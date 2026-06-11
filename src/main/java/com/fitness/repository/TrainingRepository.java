@@ -11,4 +11,5 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
     List<Training> findByUserIdAndScheduledAtBetweenOrderByScheduledAtAsc(Long userId, LocalDateTime from, LocalDateTime to);
     List<Training> findByUserIdAndSportType(Long userId, SportType sportType);
     List<Training> findByUserIdAndCompletedFalseAndScheduledAtAfterOrderByScheduledAtAsc(Long userId, LocalDateTime after);
+    List<Training> findByUserIdAndCompletedFalseAndSportTypeAndScheduledAtBetween(Long userId, SportType sportType, LocalDateTime from, LocalDateTime to);
 }

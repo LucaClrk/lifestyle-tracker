@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${DB_NAME:-fitnessdb}
+      POSTGRES_USER: ${DB_USERNAME:-fitness}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fitness}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  garmin:
+    build:
+      context: .
+      dockerfile: Dockerfile.garmin
+    ports:
+      - "5001:5000"
+    environment:
+      GARMIN_EMAIL: ${GARMIN_EMAIL}
+      GARMIN_PASSWORD: ${GARMIN_PASSWORD}
+    volumes:
+      - garmin_tokens:/garmin-tokens
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - garmin
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-fitnessdb}
+      DB_USERNAME: ${DB_USERNAME:-fitness}
+      DB_PASSWORD: ${DB_PASSWORD:-fitness}
+      GARMIN_SERVICE_URL: http://garmin:5000
+
+volumes:
+  postgres_data:
+  garmin_tokens:

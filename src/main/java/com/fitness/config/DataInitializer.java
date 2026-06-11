@@ -33,33 +33,33 @@ public class DataInitializer implements CommandLineRunner {
 
         log.info("Seeding initial data...");
 
-        User luca = new User();
-        luca.setName("Luca");
-        luca.setEmail("luca@robaws.be");
-        luca.setAge(21);
-        luca.setWeightKg(90.0);
-        luca.setHeightCm(196.0);
-        luca.setTargetWeightKg(85.0);
-        luca = userRepository.save(luca);
+        User user = new User();
+        user.setName("Demo User");
+        user.setEmail("user@example.com");
+        user.setAge(25);
+        user.setWeightKg(75.0);
+        user.setHeightCm(180.0);
+        user.setTargetWeightKg(70.0);
+        user = userRepository.save(user);
 
         WeightLog startWeight = new WeightLog();
-        startWeight.setUser(luca);
+        startWeight.setUser(user);
         startWeight.setDate(LocalDate.now());
-        startWeight.setWeightKg(90.0);
+        startWeight.setWeightKg(75.0);
         startWeight.setNotes("Starting weight");
         weightLogRepository.save(startWeight);
 
-        saveHabit(luca, "Drink 3L water", "Stay hydrated", HabitCategory.HYDRATION, 7);
-        saveHabit(luca, "Sleep 8 hours", "Quality rest for recovery", HabitCategory.SLEEP, 7);
-        saveHabit(luca, "Eat enough protein", "Target 150g protein/day", HabitCategory.NUTRITION, 7);
-        saveHabit(luca, "Stretch / mobility", "10 min post-workout stretch", HabitCategory.RECOVERY, 5);
+        saveHabit(user, "Drink 3L water", "Stay hydrated", HabitCategory.HYDRATION, 7);
+        saveHabit(user, "Sleep 8 hours", "Quality rest for recovery", HabitCategory.SLEEP, 7);
+        saveHabit(user, "Eat enough protein", "Target 150g protein/day", HabitCategory.NUTRITION, 7);
+        saveHabit(user, "Stretch / mobility", "10 min post-workout stretch", HabitCategory.RECOVERY, 5);
 
         LocalDateTime base = LocalDateTime.now().plusDays(1).withHour(18).withMinute(0).withSecond(0).withNano(0);
-        saveTraining(luca, SportType.RUNNING, base, 45, 7.0, "Easy pace, zone 2");
-        saveTraining(luca, SportType.TENNIS, base.plusDays(1), 90, null, "Practice serve + rallies");
-        saveTraining(luca, SportType.CYCLING, base.plusDays(3), 60, 25.0, "Weekend endurance ride");
+        saveTraining(user, SportType.RUNNING, base, 45, 7.0, "Easy pace, zone 2");
+        saveTraining(user, SportType.TENNIS, base.plusDays(1), 90, null, "Practice serve + rallies");
+        saveTraining(user, SportType.CYCLING, base.plusDays(3), 60, 25.0, "Weekend endurance ride");
 
-        log.info("Seed complete — user ID: {}, BMI: {}", luca.getId(), luca.getBmi());
+        log.info("Seed complete — user ID: {}, BMI: {}", user.getId(), user.getBmi());
     }
 
     private void saveHabit(User user, String name, String desc, HabitCategory cat, int days) {

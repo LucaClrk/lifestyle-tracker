@@ -1,0 +1,9 @@
+.git/
+.idea/
+data/
+.env
+.env.*
+garmin-tokens/
+.DS_Store
+**/.DS_Store
+*.md

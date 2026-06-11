@@ -121,7 +121,7 @@
         <div class="stat"><div class="value" id="s-target">85</div><div class="label">Target kg</div></div>
         <div class="stat highlight"><div class="value" id="s-toloss">…</div><div class="label">kg to lose</div></div>
         <div class="stat"><div class="value" id="s-bmi">…</div><div class="label">BMI</div></div>
-        <div class="stat"><div class="value" id="s-kcal">…</div><div class="label">kcal today</div></div>
+        <div class="stat"><div class="value" id="s-kcal">…</div><div class="label" id="s-kcal-label">kcal today</div></div>
         <div class="stat"><div class="value" id="s-habits">…</div><div class="label">habits done</div></div>
     </div>
 
@@ -335,8 +335,18 @@
     document.getElementById('overlay').addEventListener('click', e => { if (e.target===document.getElementById('overlay')) closeModal(); });
     document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
 
+    async function loadGarminKcal() {
+        try {
+            const garmin = await fetch('/api/garmin/stats').then(r => r.json());
+            if (garmin && garmin.totalKilocalories != null) {
+                document.getElementById('s-kcal').textContent = garmin.totalKilocalories.toLocaleString();
+                document.getElementById('s-kcal-label').textContent = 'kcal burned';
+            }
+        } catch(e) {}
+    }
+
     // Refresh when tab becomes visible (cross-page changes)
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) loadAll(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadAll(); loadGarminKcal(); } });
 
     let toastTimer;
     function toast(msg, type='') {
@@ -350,6 +360,7 @@
     async function api(url) { const r = await fetch(url); if (!r.ok) throw new Error(); return r.json(); }
 
     loadAll();
+    loadGarminKcal();
 </script>
 </body>
 </html>

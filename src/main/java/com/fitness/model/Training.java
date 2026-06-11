@@ -33,6 +33,7 @@ public class Training {
     private boolean completed = false;
     private Integer actualDurationMinutes;
     private String feedback;
+    private Long garminActivityId;
 
     public Training() {}
 
@@ -56,4 +57,6 @@ public class Training {
     public void setActualDurationMinutes(Integer actualDurationMinutes) { this.actualDurationMinutes = actualDurationMinutes; }
     public String getFeedback() { return feedback; }
     public void setFeedback(String feedback) { this.feedback = feedback; }
+    public Long getGarminActivityId() { return garminActivityId; }
+    public void setGarminActivityId(Long garminActivityId) { this.garminActivityId = garminActivityId; }
 }

@@ -1,5 +1,6 @@
 package com.fitness.controller;
 
+import com.fitness.dto.GarminSyncResult;
 import com.fitness.dto.TrainingCompleteRequest;
 import com.fitness.dto.TrainingRequest;
 import com.fitness.model.SportType;
@@ -68,10 +69,22 @@ public class TrainingController {
         return trainingService.complete(trainingId, req);
     }
 
+    @PostMapping("/{trainingId}/uncomplete")
+    @Operation(summary = "Undo completion of a training")
+    public Training uncomplete(@PathVariable Long userId, @PathVariable Long trainingId) {
+        return trainingService.uncomplete(trainingId);
+    }
+
     @DeleteMapping("/{trainingId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a training session")
     public void delete(@PathVariable Long userId, @PathVariable Long trainingId) {
         trainingService.delete(trainingId);
+    }
+
+    @PostMapping("/sync-garmin")
+    @Operation(summary = "Auto-complete trainings matched to recent Garmin activities")
+    public GarminSyncResult syncGarmin(@PathVariable Long userId) {
+        return trainingService.syncWithGarmin(userId);
     }
 }
