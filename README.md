@@ -12,7 +12,7 @@ A Spring Boot REST API for tracking fitness data: training sessions, daily habit
 
 ## Quick Start (Docker)
 
-This is the easiest way to get everything running — PostgreSQL and the app start together.
+This is the easiest way to get everything running. PostgreSQL and the app start together.
 
 **1. Clone the repo**
 
@@ -57,7 +57,7 @@ Static files and Java code are baked into the Docker image at build time. After 
 docker compose up --build app -d
 ```
 
-Then hard-refresh the browser (`Cmd+Shift+R` on Mac, `Ctrl+Shift+R` on Windows/Linux). The `postgres` and `garmin` containers are unaffected.
+Then hard refresh the browser (`Cmd+Shift+R` on Mac, `Ctrl+Shift+R` on Windows/Linux). The `postgres` and `garmin` containers are unaffected.
 
 ---
 
